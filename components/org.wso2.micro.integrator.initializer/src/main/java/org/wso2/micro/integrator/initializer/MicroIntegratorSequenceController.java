@@ -17,15 +17,15 @@
  */
 package org.wso2.micro.integrator.initializer;
 
+import org.apache.synapse.Mediator;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.SequenceFlowObserver;
+import org.apache.synapse.mediators.base.SequenceMediator;
 import org.wso2.micro.core.util.CoreServerInitializerHolder;
 
 public class MicroIntegratorSequenceController implements SequenceFlowObserver {
 
     private String name;
-
-    private String seqName;
 
     @Override
     public void setName(String observerName) {
@@ -34,16 +34,23 @@ public class MicroIntegratorSequenceController implements SequenceFlowObserver {
 
     @Override
     public void start(MessageContext messageContext, String observedSeq) {
-        if (messageContext.getProperty(ServiceBusConstants.AUTOMATION_MODE_MAIN_SEQ_PROPERTY) != null) {
-            seqName = (String) messageContext.getProperty(ServiceBusConstants.AUTOMATION_MODE_MAIN_SEQ_PROPERTY);
-        }
     }
 
     @Override
     public void complete(MessageContext messageContext, String observedSeq) {
-        if (observedSeq != null && observedSeq.equals(seqName)) {
-            CoreServerInitializerHolder coreServerInitializerHolder = CoreServerInitializerHolder.getInstance();
-            coreServerInitializerHolder.shutdownGracefully();
+        Object automationMain = messageContext.getProperty(
+                ServiceBusConstants.AUTOMATION_MODE_MAIN_SEQ_PROPERTY);
+        if (!(automationMain instanceof String) || observedSeq == null) {
+            return;
+        }
+
+        String mainSequenceName = (String) automationMain;
+        Mediator mainSequence = messageContext.getSequence(mainSequenceName);
+        boolean faultSequenceCompleted = mainSequence instanceof SequenceMediator
+                && observedSeq.equals(((SequenceMediator) mainSequence).getErrorHandler());
+
+        if (observedSeq.equals(mainSequenceName) || faultSequenceCompleted) {
+            CoreServerInitializerHolder.getInstance().shutdownGracefully();
         }
     }
 

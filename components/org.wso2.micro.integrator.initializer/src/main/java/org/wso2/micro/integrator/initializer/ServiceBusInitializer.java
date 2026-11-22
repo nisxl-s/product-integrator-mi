@@ -60,7 +60,6 @@ import org.wso2.config.mapper.ConfigParser;
 import org.wso2.micro.application.deployer.CarbonApplication;
 import org.wso2.micro.core.Constants;
 import org.wso2.micro.core.ServerShutdownHandler;
-import org.wso2.micro.core.util.CoreServerInitializerHolder;
 import org.wso2.integration.transaction.counter.TransactionCountHandler;
 import org.wso2.micro.integrator.core.services.Axis2ConfigurationContextService;
 import org.wso2.micro.integrator.core.services.CarbonServerConfigurationService;
@@ -268,9 +267,7 @@ public class ServiceBusInitializer {
                             getSequence(sequenceName);
                     synapseEnvironment.getSequenceObservers().add(new MicroIntegratorSequenceController());
                     synCtx.setProperty(ServiceBusConstants.AUTOMATION_MODE_MAIN_SEQ_PROPERTY, sequenceName);
-                    if (!synCtx.getEnvironment().injectMessage(synCtx, seq)) {
-                        CoreServerInitializerHolder.getInstance().shutdownGracefully();
-                    }
+                    synCtx.getEnvironment().injectMessage(synCtx, seq);
                 }
             }
         } catch (Exception e) {
